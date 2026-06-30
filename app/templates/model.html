@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Model{% endblock %}
+{% block content %}
+<div class="two-col">
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Model Architecture</span>
+      <span class="card-sub">CNN-GRU · TensorFlow 2.15</span>
+    </div>
+    <div class="arch-layer" style="background:var(--blue-muted);border-left-color:var(--blue)">
+      <span class="arch-label" style="color:#93c5fd">Input · 359D feature vector</span>
+      <span class="chip chip-blue">SRM 346D + MFCC 13D</span>
+    </div>
+    <div class="arch-arrow">↓ reshape</div>
+    <div class="arch-layer" style="background:var(--purple-muted);border-left-color:var(--purple)">
+      <span class="arch-label" style="color:#d8b4fe">Conv2D × 3 layers</span>
+      <span class="chip chip-purple">Kernel=3, Dropout=0.3</span>
+    </div>
+    <div class="arch-arrow">↓ 128D spatial features</div>
+    <div class="arch-layer" style="background:var(--teal-muted);border-left-color:var(--teal)">
+      <span class="arch-label" style="color:#5eead4">BiGRU temporal layer</span>
+      <span class="chip chip-teal">Units=64 bidirectional</span>
+    </div>
+    <div class="arch-arrow">↓ 64D hidden state</div>
+    <div class="arch-layer" style="background:var(--green-muted);border-left-color:var(--green)">
+      <span class="arch-label" style="color:#86efac">Dense + Sigmoid</span>
+      <span class="chip chip-green">BCE Loss · Output: prob</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Training Status</span>
+      <span class="card-sub">BOSSbase 1.01 + LibriSpeech</span>
+    </div>
+    <div class="three-col" style="gap:8px;margin-bottom:14px">
+      <div style="text-align:center;padding:10px;background:var(--surface-2);border-radius:6px">
+        <div class="stat-label">Train set</div><div class="stat-value blue" style="font-size:18px">12,000</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:var(--surface-2);border-radius:6px">
+        <div class="stat-label">Val set</div><div class="stat-value blue" style="font-size:18px">3,000</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:var(--surface-2);border-radius:6px">
+        <div class="stat-label">Test set</div><div class="stat-value blue" style="font-size:18px">1,500</div>
+      </div>
+    </div>
+    <div class="pr-list">
+      <div class="pr-row"><span class="pr-label">Epoch progress</span><div class="pr-track"><div class="pr-fill" style="width:100%;background:var(--green)"></div></div><span class="pr-val green">100%</span></div>
+      <div class="pr-row"><span class="pr-label">Val accuracy</span><div class="pr-track"><div class="pr-fill" style="width:92%;background:var(--blue)"></div></div><span class="pr-val blue">92%</span></div>
+      <div class="pr-row"><span class="pr-label">Train loss</span><div class="pr-track"><div class="pr-fill" style="width:8%;background:var(--amber)"></div></div><span class="pr-val amber">0.08</span></div>
+    </div>
+    <div style="margin-top:12px;padding:10px;background:var(--surface-2);border-radius:6px;font-size:12px;color:var(--text-2)">
+      <strong style="color:var(--text)">Status:</strong> Sprint 5 — FastAPI system build in progress. CNN-GRU training complete on image pipeline.
+    </div>
+  </div>
+</div>
+{% endblock %}

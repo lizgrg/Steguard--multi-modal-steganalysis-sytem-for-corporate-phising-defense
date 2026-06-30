@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Batch Upload{% endblock %}
+{% block content %}
+<div class="card" style="max-width:680px">
+  <div class="card-hdr">
+    <span class="card-title">Batch File Upload</span>
+    <span class="card-sub">PNG + WAV supported · 10K files/hr throughput</span>
+  </div>
+
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <i class="ti ti-cloud-upload"></i>
+    <div class="upload-title">Drop PNG / WAV files here</div>
+    <div class="upload-hint">or click to browse · Max 500 files per batch</div>
+  </div>
+  <input type="file" id="file-input" multiple accept=".png,.wav" style="display:none">
+
+  <!-- Error banner -->
+  <div id="error-banner" style="display:none;margin-top:12px;padding:10px 14px;background:var(--red-muted);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#fca5a5">
+    <i class="ti ti-alert-triangle"></i> <span id="error-msg"></span>
+  </div>
+
+  <!-- Rejected files list -->
+  <div id="rejected-wrap" style="display:none;margin-top:8px;padding:10px 14px;background:var(--amber-muted);border:1px solid rgba(245,158,11,.3);border-radius:8px;font-size:11px;color:#fcd34d">
+    <div style="font-weight:600;margin-bottom:4px"><i class="ti ti-ban"></i> Rejected files (unsupported format):</div>
+    <div id="rejected-list" style="font-family:var(--mono)"></div>
+  </div>
+
+  <div id="file-list" style="margin-top:12px;display:none">
+    <div class="sec-title">Files queued: <span id="file-count">0</span></div>
+    <div id="file-names" style="font-size:11px;color:var(--text-2);font-family:var(--mono);max-height:120px;overflow-y:auto;padding:6px;background:var(--surface-2);border-radius:6px;margin-top:6px"></div>
+  </div>
+
+  <div style="margin-top:14px;display:flex;gap:10px">
+    <button class="btn-primary" id="run-btn" onclick="runBatch()" disabled>
+      <i class="ti ti-player-play"></i>Run Analysis
+    </button>
+    <button class="btn-ghost" onclick="clearFiles()">
+      <i class="ti ti-x"></i>Clear
+    </button>
+  </div>
+
+  <div id="progress-wrap" style="display:none;margin-top:14px">
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:4px">Processing… <span id="progress-pct">0</span>%</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="info-banner" style="margin-top:14px">
+    <i class="ti ti-info-circle" style="flex-shrink:0;color:var(--blue)"></i>
+    <div>
+      <strong>Supported formats only:</strong> PNG images and WAV audio files.<br>
+      JPG, MP3, PDF and other formats are not supported and will be rejected.
+      Files are SHA256-hashed — GDPR Art.5 compliant.
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="results-section" style="display:none">
+  <div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-top:0" id="batch-stats"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-hdr">
+      <span class="card-title">Batch Results</span>
+      <button class="btn-ghost btn-sm" onclick="clearFiles()"><i class="ti ti-x"></i>Clear Results</button>
+    </div>
+    <table class="file-table">
+      <thead><tr><th>File</th><th>Type</th><th>Stego Prob.</th><th>Verdict</th><th>Time (ms)</th></tr></thead>
+      <tbody id="results-tbody"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedFiles = [];
+const ALLOWED_EXT = ['png', 'wav'];
+
+function getExt(filename) {
+  return filename.split('.').pop().toLowerCase();
+}
+
+function validateFiles(files) {
+  const accepted = [];
+  const rejected = [];
+  files.forEach(f => {
+    const ext = getExt(f.name);
+    if (ALLOWED_EXT.includes(ext)) {
+      accepted.push(f);
+    } else {
+      rejected.push(f.name);
+    }
+  });
+  return { accepted, rejected };
+}
+
+document.getElementById('file-input').addEventListener('change', e => {
+  handleFiles(Array.from(e.target.files));
+});
+
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+
+function handleFiles(files) {
+  const { accepted, rejected } = validateFiles(files);
+
+  // Show error if ALL files rejected
+  if (files.length > 0 && accepted.length === 0) {
+    showError(`❌ None of your files are supported. Only PNG images and WAV audio files are accepted. You uploaded: ${[...new Set(files.map(f => '.' + getExt(f.name)))].join(', ')}`);
+    selectedFiles = [];
+    updateFileList();
+    return;
+  }
+
+  // Show warning for partially rejected files
+  hideError();
+  if (rejected.length > 0) {
+    document.getElementById('rejected-wrap').style.display = 'block';
+    document.getElementById('rejected-list').innerHTML =
+      rejected.map(n => `<div>✗ ${n}</div>`).join('');
+  } else {
+    document.getElementById('rejected-wrap').style.display = 'none';
+  }
+
+  selectedFiles = accepted;
+  updateFileList();
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-banner').style.display = 'block';
+  document.getElementById('rejected-wrap').style.display = 'none';
+}
+
+function hideError() {
+  document.getElementById('error-banner').style.display = 'none';
+}
+
+function updateFileList() {
+  document.getElementById('file-list').style.display = selectedFiles.length ? 'block' : 'none';
+  document.getElementById('file-count').textContent = selectedFiles.length;
+  document.getElementById('run-btn').disabled = selectedFiles.length === 0;
+  document.getElementById('file-names').innerHTML =
+    selectedFiles.map(f => {
+      const ext   = getExt(f.name);
+      const icon  = ext === 'png' ? 'ti-photo' : 'ti-wave-square';
+      const color = ext === 'png' ? 'var(--blue)' : 'var(--purple)';
+      return `<div style="display:flex;align-items:center;gap:6px"><i class="ti ${icon}" style="color:${color}"></i>${f.name}</div>`;
+    }).join('');
+}
+
+function clearFiles() {
+  selectedFiles = [];
+  document.getElementById('file-input').value             = '';
+  document.getElementById('file-list').style.display      = 'none';
+  document.getElementById('run-btn').disabled             = true;
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('progress-wrap').style.display  = 'none';
+  document.getElementById('progress-pct').textContent     = '0';
+  document.getElementById('progress-fill').style.width    = '0%';
+  document.getElementById('results-tbody').innerHTML      = '';
+  document.getElementById('batch-stats').innerHTML        = '';
+  document.getElementById('rejected-wrap').style.display  = 'none';
+  hideError();
+}
+
+async function runBatch() {
+  if (!selectedFiles.length) return;
+  document.getElementById('progress-wrap').style.display   = 'block';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('run-btn').disabled = true;
+  hideError();
+
+  const results = [];
+  for (let i = 0; i < selectedFiles.length; i++) {
+    const f  = selectedFiles[i];
+    const fd = new FormData();
+    fd.append('file', f);
+    try {
+      const r = await fetch('/api/predict', { method: 'POST', body: fd });
+      if (!r.ok) {
+        const err = await r.json();
+        results.push({ file_name: f.name, verdict: 'ERROR', stego_prob: 0, processing_ms: 0, file_type: getExt(f.name).toUpperCase(), error: err.detail });
+      } else {
+        results.push(await r.json());
+      }
+    } catch(e) {
+      results.push({ file_name: f.name, verdict: 'ERROR', stego_prob: 0, processing_ms: 0, file_type: '?' });
+    }
+    const pct = Math.round((i+1)/selectedFiles.length*100);
+    document.getElementById('progress-pct').textContent  = pct;
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  showResults(results);
+  document.getElementById('run-btn').disabled = false;
+}
+
+function showResults(results) {
+  const stego  = results.filter(r=>r.verdict==='STEGO').length;
+  const clean  = results.filter(r=>r.verdict==='CLEAN').length;
+  const review = results.filter(r=>r.verdict==='REVIEW').length;
+  const rate   = Math.round(stego/Math.max(results.length,1)*100*10)/10;
+
+  document.getElementById('batch-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Processed</div><div class="stat-value blue">${results.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Stego Found</div><div class="stat-value red">${stego}</div></div>
+    <div class="stat-card"><div class="stat-label">Clean Files</div><div class="stat-value green">${clean}</div></div>
+    <div class="stat-card"><div class="stat-label">Detection Rate</div><div class="stat-value amber">${rate}%</div></div>
+  `;
+
+  const tbody = document.getElementById('results-tbody');
+  tbody.innerHTML = results.map(r => {
+    const pct    = Math.round((r.stego_prob||0)*100);
+    const color  = pct>=65?'var(--red)':pct>=35?'var(--amber)':'var(--green)';
+    const vclass = r.verdict==='STEGO'?'v-stego':r.verdict==='REVIEW'?'v-review':r.verdict==='ERROR'?'v-review':'v-clean';
+    const ext    = getExt(r.file_name||'');
+    const icon   = ext==='png'?'ti-photo':'ti-wave-square';
+    const ftclass= (r.file_type==='IMG'||ext==='png')?'ftype-img':'ftype-wav';
+    return `<tr>
+      <td><div class="fname"><i class="ti ${icon}"></i>${r.file_name}</div></td>
+      <td><span class="ftype ${ftclass}">${r.file_type||'?'}</span></td>
+      <td><div class="prob-wrap"><div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%;background:${color}"></div></div><span class="prob-val">${r.stego_prob||0}</span></div></td>
+      <td><span class="verdict ${vclass}">${r.verdict}</span></td>
+      <td class="dim">${r.processing_ms||0}ms</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('results-section').style.display = 'block';
+}
+</script>
+{% endblock %}

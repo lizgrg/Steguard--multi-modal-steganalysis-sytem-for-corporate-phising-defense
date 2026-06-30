@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="logs-toolbar">
+    <span class="card-title">MySQL Audit Log</span>
+    <div class="filter-row">
+      <input type="text" class="text-input" placeholder="Search file…" oninput="filterLogs(this.value)">
+      <select class="select-input" onchange="filterVerdict(this.value)">
+        <option value="">All verdicts</option>
+        <option value="STEGO">STEGO</option>
+        <option value="CLEAN">CLEAN</option>
+        <option value="REVIEW">REVIEW</option>
+      </select>
+      <button class="btn-ghost btn-sm"><i class="ti ti-filter"></i>Filter</button>
+      <button class="btn-primary btn-sm" onclick="exportCSV()"><i class="ti ti-file-report"></i>Export CSV</button>
+    </div>
+  </div>
+
+  <table class="file-table" id="logs-table">
+    <thead>
+      <tr>
+        <th>Audit ID</th><th>Timestamp</th><th>File</th><th>Type</th>
+        <th>SHA256</th><th>Verdict</th><th>Prob.</th><th>SOC2</th>
+      </tr>
+    </thead>
+    <tbody id="logs-tbody">
+      {% if logs %}
+        {% for r in logs %}
+        <tr data-verdict="{{ r.verdict }}" data-file="{{ r.file_name }}">
+          <td style="font-family:var(--mono);font-size:11px;color:var(--text-2)">{{ r.audit_id }}</td>
+          <td style="font-size:11px;color:var(--text-2);font-family:var(--mono)">{{ r.timestamp }}</td>
+          <td><div class="fname">
+            {% if r.file_type == 'IMG' %}<i class="ti ti-photo" style="color:var(--blue)"></i>
+            {% else %}<i class="ti ti-wave-square" style="color:var(--purple)"></i>{% endif %}
+            {{ r.file_name }}
+          </div></td>
+          <td><span class="ftype {% if r.file_type=='IMG' %}ftype-img{% else %}ftype-wav{% endif %}">{{ r.file_type }}</span></td>
+          <td style="font-family:var(--mono);font-size:10px;color:var(--text-3)">{{ r.sha256 }}</td>
+          <td><span class="verdict {% if r.verdict=='STEGO' %}v-stego{% elif r.verdict=='REVIEW' %}v-review{% else %}v-clean{% endif %}">{{ r.verdict }}</span></td>
+          <td style="font-family:var(--mono);font-size:11px">{{ r.stego_prob }}</td>
+          <td><i class="ti ti-check" style="color:var(--green)"></i></td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="8" class="empty-state">No audit entries yet. <a href="/upload">Run a batch scan</a> to populate the log.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterLogs(q) {
+  document.querySelectorAll('#logs-tbody tr[data-file]').forEach(row => {
+    row.style.display = row.dataset.file.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function filterVerdict(v) {
+  document.querySelectorAll('#logs-tbody tr[data-verdict]').forEach(row => {
+    row.style.display = (!v || row.dataset.verdict === v) ? '' : 'none';
+  });
+}
+
+// Fix 2 — Export CSV (actually downloads file)
+function exportCSV() {
+  const rows = document.querySelectorAll('#logs-tbody tr[data-verdict]');
+  if (rows.length === 0) {
+    alert('No scan records to export.');
+    return;
+  }
+  let csv = 'Audit ID,Timestamp,File,Type,SHA256,Verdict,Probability,SOC2\n';
+  rows.forEach(row => {
+    const cols = row.querySelectorAll('td');
+    const auditId  = cols[0].innerText.trim();
+    const ts       = cols[1].innerText.trim();
+    const file     = cols[2].innerText.trim();
+    const type     = cols[3].innerText.trim();
+    const sha      = cols[4].innerText.trim();
+    const verdict  = cols[5].innerText.trim();
+    const prob     = cols[6].innerText.trim();
+    csv += `"${auditId}","${ts}","${file}","${type}","${sha}","${verdict}","${prob}","Compliant"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'stegguard_audit_log_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

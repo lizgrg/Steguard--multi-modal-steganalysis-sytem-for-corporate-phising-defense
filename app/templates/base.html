@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StegGuard SOC — {% block title %}Dashboard{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    <i class="ti ti-shield-lock brand-icon"></i>
+    <span class="brand-name">StegGuard</span>
+    <span class="brand-badge">SOC</span>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="topbar-nav">
+    <a href="/"        class="nav-tab {% if active_page=='dashboard' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+    <a href="/upload"  class="nav-tab {% if active_page=='upload' %}active{% endif %}"><i class="ti ti-upload"></i>Batch Upload</a>
+    <a href="/analysis"class="nav-tab {% if active_page=='analysis' %}active{% endif %}"><i class="ti ti-chart-dots"></i>Analysis</a>
+    <a href="/model"   class="nav-tab {% if active_page=='model' %}active{% endif %}"><i class="ti ti-cpu"></i>Model</a>
+    <a href="/logs"    class="nav-tab {% if active_page=='logs' %}active{% endif %}"><i class="ti ti-database"></i>Audit Logs</a>
+    <a href="/settings"class="nav-tab {% if active_page=='settings' %}active{% endif %}"><i class="ti ti-settings"></i>Settings</a>
+  </div>
+  <div class="topbar-right">
+    <span class="badge-alert" id="alert-count"><i class="ti ti-alert-triangle"></i> <span id="threat-count">0 Threats</span></span>
+    <span class="badge-ok"><i class="ti ti-activity"></i> System Online</span>
+    <button class="icon-btn"><i class="ti ti-bell"></i></button>
+    <div class="avatar">LG</div>
+  </div>
+</nav>
+
+<div class="shell">
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <a href="/"         class="sb-icon {% if active_page=='dashboard' %}active{% endif %}" title="Dashboard"><i class="ti ti-layout-dashboard"></i></a>
+  <a href="/upload"   class="sb-icon {% if active_page=='upload' %}active{% endif %}" title="Batch Upload"><i class="ti ti-upload"></i></a>
+  <a href="/analysis" class="sb-icon {% if active_page=='analysis' %}active{% endif %}" title="Analysis"><i class="ti ti-photo-scan"></i></a>
+  <a href="/model"    class="sb-icon {% if active_page=='model' %}active{% endif %}" title="Model"><i class="ti ti-brain"></i></a>
+  <a href="/logs"     class="sb-icon {% if active_page=='logs' %}active{% endif %}" title="Audit Logs" style="position:relative"><i class="ti ti-database"></i><span class="sb-dot" id="sb-alert-dot"></span></a>
+  <div class="sb-spacer"></div>
+  <a href="/settings" class="sb-icon {% if active_page=='settings' %}active{% endif %}" title="Settings"><i class="ti ti-settings"></i></a>
+</aside>
+
+<!-- ── MAIN CONTENT ── -->
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── RIGHT PANEL ── -->
+{% block right_panel %}
+<aside class="right-panel">
+  <div class="rp-section">
+    <div class="sec-title">Live Alerts</div>
+    <div class="alerts-feed" id="alerts-feed">
+      <div class="alert-item">
+        <span class="alert-dot dot-green"></span>
+        <div>
+          <div class="alert-text">No scans yet — upload files to see alerts.</div>
+          <div class="alert-time">—</div>
+        </div>
+      </div>
+    </div>
+    <a href="/logs" class="btn-ghost btn-full">View all alerts ↗</a>
+  </div>
+
+  <div class="rp-section rp-border">
+    <div class="sec-title">Sprint Progress</div>
+    <div class="sprint-list">
+      <div class="sprint-row"><span>Sprint 0 — Problem domain</span><span class="chip chip-green">Done</span></div>
+      <div class="sprint-row"><span>Sprint 1 — MVP + ERD</span><span class="chip chip-green">Done</span></div>
+      <div class="sprint-row"><span>Sprint 2-3 — Design</span><span class="chip chip-green">Done</span></div>
+      <div class="sprint-row"><span>Sprint 4 — CNN-GRU 359D</span><span class="chip chip-green">Done</span></div>
+      <div class="sprint-row"><span>Sprint 5 — FastAPI MVP</span><span class="chip chip-blue">Active</span></div>
+      <div class="sprint-row"><span>Sprint 6 — REST API</span><span class="chip chip-amber">Next</span></div>
+      <div class="sprint-row"><span>Sprint 7 — TDD</span><span class="chip chip-gray">Planned</span></div>
+      <div class="sprint-row"><span>Sprint 8 — Evaluation</span><span class="chip chip-gray">Planned</span></div>
+    </div>
+  </div>
+
+  <div class="rp-section rp-border">
+    <div class="sec-title">Quick Actions</div>
+    <div class="qa-btns">
+      <a href="/logs"   class="btn-primary btn-full"><i class="ti ti-file-report"></i>Generate PDF Report</a>
+      <a href="/upload" class="btn-ghost btn-full"><i class="ti ti-player-play"></i>New Batch</a>
+      <a href="/model"  class="btn-ghost btn-full"><i class="ti ti-adjustments"></i>Tune Model</a>
+    </div>
+  </div>
+</aside>
+{% endblock %}
+
+</div><!-- /shell -->
+
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

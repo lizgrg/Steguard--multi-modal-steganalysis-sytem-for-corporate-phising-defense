@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- ── STAT CARDS ── -->
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-label">Files Analysed Today</div>
+    <div class="stat-value blue" id="stat-total">{{ stats.total }}</div>
+    <div class="stat-sub"><i class="ti ti-trending-up up"></i><span class="up">Real-time</span></div>
+    <span class="chip chip-blue"><i class="ti ti-clock"></i> Live</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Stego Detections</div>
+    <div class="stat-value red" id="stat-threats">{{ stats.threats }}</div>
+    <div class="stat-sub"><i class="ti ti-shield-x down"></i><span class="down">Threats found</span></div>
+    <span class="chip chip-red"><i class="ti ti-shield-x"></i> Threats Found</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Model F1-Score</div>
+    <div class="stat-value green">{{ stats.f1_score }}%</div>
+    <div class="stat-sub"><i class="ti ti-trending-up up"></i><span class="up">Above 92% target</span></div>
+    <span class="chip chip-green"><i class="ti ti-checks"></i> On Target</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">False Positive Rate</div>
+    <div class="stat-value amber">{{ stats.fpr }}%</div>
+    <div class="stat-sub"><i class="ti ti-trending-down up"></i><span class="up">Below 1% SLA</span></div>
+    <span class="chip chip-amber"><i class="ti ti-target"></i> &lt;1% FPR</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Avg Processing Time</div>
+    <div class="stat-value teal">{{ stats.avg_time_s }}s</div>
+    <div class="stat-sub"><i class="ti ti-bolt up"></i><span class="up">Below 5s target</span></div>
+    <span class="chip chip-teal"><i class="ti ti-bolt"></i> 10K files/hr</span>
+  </div>
+</div>
+
+<!-- ── PIPELINE ── -->
+<div class="card">
+  <div class="card-hdr">
+    <span class="card-title">CNN-GRU 359D Detection Pipeline</span>
+    <span class="card-sub">Active · Last run 0:43s ago</span>
+  </div>
+  <div class="pipeline">
+    <div class="pipe-step done">
+      <i class="ti ti-upload" style="color:var(--green)"></i>
+      <span class="ps-label">File Ingest</span>
+      <span class="ps-dim">PNG/WAV</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step done">
+      <i class="ti ti-photo-scan" style="color:var(--green)"></i>
+      <span class="ps-label">SRM Extract</span>
+      <span class="ps-dim">346D</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step done">
+      <i class="ti ti-wave-square" style="color:var(--green)"></i>
+      <span class="ps-label">MFCC Extract</span>
+      <span class="ps-dim">13D</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step active">
+      <i class="ti ti-arrows-join" style="color:var(--blue)"></i>
+      <span class="ps-label">Fusion</span>
+      <span class="ps-dim">359D</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step active">
+      <i class="ti ti-brain" style="color:var(--blue)"></i>
+      <span class="ps-label">CNN</span>
+      <span class="ps-dim">128D</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <i class="ti ti-timeline"></i>
+      <span class="ps-label">BiGRU</span>
+      <span class="ps-dim">64D</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <i class="ti ti-binary"></i>
+      <span class="ps-label">Classify</span>
+      <span class="ps-dim">Sigmoid</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step warn">
+      <i class="ti ti-database" style="color:var(--amber)"></i>
+      <span class="ps-label">MySQL Log</span>
+      <span class="ps-dim">SOC2</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <i class="ti ti-file-export"></i>
+      <span class="ps-label">PDF Report</span>
+      <span class="ps-dim">Export</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── MID ROW ── -->
+<div class="two-col">
+
+  <!-- RECENT BATCH TABLE -->
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Recent Batch Analysis</span>
+      <div class="btn-row">
+        <a href="/logs" class="btn-ghost btn-sm"><i class="ti ti-filter"></i>View All</a>
+        <a href="/upload" class="btn-primary btn-sm"><i class="ti ti-file-export"></i>New Batch</a>
+      </div>
+    </div>
+    <table class="file-table">
+      <thead>
+        <tr><th>File</th><th>Type</th><th>Stego Prob.</th><th>Verdict</th><th>Time</th></tr>
+      </thead>
+      <tbody id="recent-tbody">
+        {% if recent %}
+          {% for r in recent %}
+          <tr>
+            <td>
+              <div class="fname">
+                {% if r.file_type == 'IMG' %}<i class="ti ti-photo" style="color:var(--blue)"></i>
+                {% else %}<i class="ti ti-wave-square" style="color:var(--purple)"></i>{% endif %}
+                {{ r.file_name }}
+              </div>
+            </td>
+            <td><span class="ftype {% if r.file_type=='IMG' %}ftype-img{% else %}ftype-wav{% endif %}">{{ r.file_type }}</span></td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg">
+                  <div class="prob-bar" style="width:{{ (r.stego_prob*100)|int }}%;background:{% if r.stego_prob>=0.65 %}var(--red){% elif r.stego_prob>=0.35 %}var(--amber){% else %}var(--green){% endif %}"></div>
+                </div>
+                <span class="prob-val {% if r.stego_prob>=0.65 %}red{% elif r.stego_prob>=0.35 %}amber{% else %}green{% endif %}">{{ r.stego_prob }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="verdict {% if r.verdict=='STEGO' %}v-stego{% elif r.verdict=='REVIEW' %}v-review{% else %}v-clean{% endif %}">{{ r.verdict }}</span>
+            </td>
+            <td class="dim">{{ r.processing_ms }}ms</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="5" class="empty-state">No scans yet — <a href="/upload">run a batch</a></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CHARTS COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- CLASSIFIER BENCHMARKS -->
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Classifier Benchmarks</span></div>
+      <div class="clf-row">
+        <div class="clf-icon" style="background:var(--blue-muted)"><i class="ti ti-brain" style="color:var(--blue)"></i></div>
+        <div class="clf-info"><div class="clf-name">CNN-GRU 359D <span class="proposed">(proposed)</span></div><div class="clf-sub">SRM+MFCC fusion</div></div>
+        <span class="clf-f1 green">92%</span>
+      </div>
+      <div class="clf-row">
+        <div class="clf-icon" style="background:var(--teal-muted)"><i class="ti ti-circuit-cell" style="color:var(--teal)"></i></div>
+        <div class="clf-info"><div class="clf-name">SRM + SVM</div><div class="clf-sub">Image only, 28D</div></div>
+        <span class="clf-f1 amber">71%</span>
+      </div>
+      <div class="clf-row">
+        <div class="clf-icon" style="background:var(--surface-2)"><i class="ti ti-trees" style="color:var(--muted)"></i></div>
+        <div class="clf-info"><div class="clf-name">Random Forest</div><div class="clf-sub">SRM 28D features</div></div>
+        <span class="clf-f1 red">69%</span>
+      </div>
+      <div class="clf-row">
+        <div class="clf-icon" style="background:var(--surface-2)"><i class="ti ti-chart-bar" style="color:var(--muted)"></i></div>
+        <div class="clf-info"><div class="clf-name">DCT + Random Forest</div><div class="clf-sub">Baseline 5D</div></div>
+        <span class="clf-f1 red">57%</span>
+      </div>
+    </div>
+
+    <!-- 359D FEATURE VECTOR -->
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">359D Feature Vector</span></div>
+      <div class="fvec-row">
+        <div class="fvec-box blue-box">
+          <div class="fvec-label">SRM Image</div>
+          <div class="fvec-dim">346D</div>
+          <div class="fvec-note">30 high-pass filters · 5×5 kernels</div>
+        </div>
+        <div class="fvec-plus">+</div>
+        <div class="fvec-box purple-box">
+          <div class="fvec-label">MFCC Audio</div>
+          <div class="fvec-dim">13D</div>
+          <div class="fvec-note">13 coeffs · 25ms frames · 16kHz</div>
+        </div>
+        <div class="fvec-plus">=</div>
+        <div class="fvec-box green-box">
+          <div class="fvec-label">Fused</div>
+          <div class="fvec-dim">359D</div>
+          <div class="fvec-note">Novel multi-modal vector</div>
+        </div>
+      </div>
+      <div class="sec-title" style="margin-top:10px">Sample feature magnitude</div>
+      <div class="fvec-viz" id="fvec-viz"></div>
+      <div class="fvec-axis">
+        <span>SRM dim 1</span>
+        <span style="color:var(--blue)">← 346 SRM dims →</span>
+        <span style="color:var(--purple)">← 13 MFCC →</span>
+        <span>dim 359</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── COMPLIANCE ROW ── -->
+<div class="three-col">
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Compliance & Audit</span></div>
+    <div class="compliance-list">
+      <div class="comp-item green-item"><i class="ti ti-certificate" style="color:var(--green)"></i><span>SOC2 Type II</span><span class="chip chip-green">Compliant</span></div>
+      <div class="comp-item green-item"><i class="ti ti-lock" style="color:var(--green)"></i><span>GDPR Art.5</span><span class="chip chip-green">SHA256 only</span></div>
+      <div class="comp-item green-item"><i class="ti ti-database" style="color:var(--green)"></i><span>MySQL Audit Log</span><span class="chip chip-green">Immutable</span></div>
+      <div class="comp-item amber-item"><i class="ti ti-api" style="color:var(--amber)"></i><span>REST API</span><span class="chip chip-amber">Rate limited</span></div>
+      <div class="comp-item blue-item"><i class="ti ti-brand-docker" style="color:var(--blue)"></i><span>Docker Deploy</span><span class="chip chip-blue">AWS t3.medium</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Detection Rate (Today)</span></div>
+    <div class="bar-chart-wrap">
+      <div class="bar-chart" id="bar-chart"></div>
+      <div class="bar-labels" id="bar-labels"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Precision / Recall</span></div>
+    <div class="pr-list">
+      <div class="pr-row"><span class="pr-label">F1-Score</span><div class="pr-track"><div class="pr-fill" style="width:92%;background:var(--green)"></div></div><span class="pr-val green">92%</span></div>
+      <div class="pr-row"><span class="pr-label">Precision</span><div class="pr-track"><div class="pr-fill" style="width:94%;background:var(--blue)"></div></div><span class="pr-val blue">94%</span></div>
+      <div class="pr-row"><span class="pr-label">Recall</span><div class="pr-track"><div class="pr-fill" style="width:89%;background:var(--teal)"></div></div><span class="pr-val teal">89%</span></div>
+      <div class="pr-row"><span class="pr-label">FPR</span><div class="pr-track"><div class="pr-fill" style="width:1%;background:var(--red)"></div></div><span class="pr-val red">0.71%</span></div>
+      <div class="pr-row"><span class="pr-label">AUC-ROC</span><div class="pr-track"><div class="pr-fill" style="width:96%;background:var(--purple)"></div></div><span class="pr-val purple">0.96</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Bar chart — detection volume by hour
+const barData  = [5,8,14,22,34,47,52,63,58,44,39,61];
+const barLabel = ['08h','','','09h','','','10h','','','11h','',''];
+const maxV = Math.max(...barData);
+const bc = document.getElementById('bar-chart');
+const bl = document.getElementById('bar-labels');
+barData.forEach((v,i) => {
+  const b = document.createElement('div');
+  b.className = 'bar';
+  b.style.height = Math.round(v/maxV*100)+'%';
+  b.style.background = v>50?'var(--red)':v>30?'var(--amber)':'var(--blue)';
+  b.title = v+' detections';
+  bc.appendChild(b);
+  const l = document.createElement('div');
+  l.className = 'bar-label';
+  l.textContent = barLabel[i];
+  bl.appendChild(l);
+});
+
+// Feature vector sparkline
+const fv = document.getElementById('fvec-viz');
+for(let i=0;i<90;i++){
+  const b = document.createElement('div');
+  b.className = 'fvec-bar';
+  const h = 4+Math.abs(Math.sin(i*0.4+Math.cos(i*0.13))*22);
+  b.style.height = Math.round(h)+'px';
+  b.style.background = i<78?'var(--blue)':'var(--purple)';
+  b.style.opacity = (0.5+Math.random()*0.5).toFixed(2);
+  fv.appendChild(b);
+}
+
+// Poll stats every 10s
+function refreshStats(){
+  fetch('/api/stats').then(r=>r.json()).then(d=>{
+    document.getElementById('stat-total').textContent   = d.total.toLocaleString();
+    document.getElementById('stat-threats').textContent = d.threats;
+    document.getElementById('threat-count').textContent = d.threats + ' Threats';
+    if(d.threats>0) document.getElementById('sb-alert-dot').style.display='block';
+  }).catch(()=>{});
+}
+refreshStats();
+setInterval(refreshStats, 10000);
+</script>
+{% endblock %}

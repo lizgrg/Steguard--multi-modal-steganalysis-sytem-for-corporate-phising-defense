@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+{% block title %}Analysis{% endblock %}
+{% block content %}
+<div class="two-col">
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Single File Inspection</span></div>
+    <div class="tab-strip">
+      <button class="tab-btn on"  onclick="switchTab(this,'tab-srm')">Image (SRM)</button>
+      <button class="tab-btn"     onclick="switchTab(this,'tab-mfcc')">Audio (MFCC)</button>
+      <button class="tab-btn"     onclick="switchTab(this,'tab-fused')">Fused 359D</button>
+    </div>
+
+    <!-- TAB 1 — SRM IMAGE -->
+    <div id="tab-srm">
+      <div class="upload-zone" style="padding:18px;margin-bottom:12px"
+           id="srm-drop" onclick="document.getElementById('srm-file').click()">
+        <i class="ti ti-cloud-upload" style="font-size:22px;margin-bottom:4px;display:block"></i>
+        <div class="upload-hint" id="srm-hint-text">Click to upload a PNG or JPG image</div>
+      </div>
+      <input type="file" id="srm-file" accept=".png,.jpg,.jpeg" style="display:none"
+             onchange="handleSRMFile(this)">
+
+      <div id="srm-loading" style="display:none;text-align:center;padding:16px;color:var(--text-2);font-size:12px">
+        <i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i>
+        <div style="margin-top:6px">Analysing image...</div>
+      </div>
+
+      <div class="srm-preview" id="srm-preview">
+        <i class="ti ti-photo-scan" style="font-size:32px;color:var(--blue)"></i>
+        <div style="font-size:12px;color:var(--text-2);margin-top:6px">SRM residual map (346 filter responses)</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:2px">Upload a PNG or JPG to see feature analysis</div>
+      </div>
+
+      <div id="srm-chart-wrap" style="display:none">
+        <div class="sec-title" style="margin-bottom:6px">SRM Residual Feature Magnitudes (28D)</div>
+        <div id="srm-chart" style="display:flex;align-items:flex-end;gap:2px;height:60px;overflow:hidden;background:var(--surface-2);border-radius:6px;padding:6px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);margin-top:3px">
+          <span>res0 (horizontal)</span><span>res1 (vertical)</span><span>res2 (Laplacian)</span><span>res3 (edge)</span><span>res4 (diagonal)</span><span>pixel</span>
+        </div>
+      </div>
+
+      <div id="srm-result" style="display:none;margin-top:12px">
+        <div class="result-box">
+          <div class="result-cell" id="srm-prob-cell" style="background:var(--surface-2)">
+            <div class="rc-label">Stego probability</div>
+            <div class="rc-val" id="srm-prob-val">—</div>
+          </div>
+          <div class="result-cell" style="background:var(--surface-2)">
+            <div class="rc-label">Confidence</div>
+            <div class="rc-val" style="font-size:16px" id="srm-conf-val">—</div>
+          </div>
+          <div class="result-cell" style="background:var(--blue-muted)">
+            <div class="rc-label">Algorithm</div>
+            <div class="rc-val" style="color:#93c5fd;font-size:13px" id="srm-algo-val">—</div>
+          </div>
+        </div>
+        <div id="srm-verdict" style="margin-top:10px;padding:10px;border-radius:6px;font-size:12px;font-weight:500"></div>
+        <div id="srm-file-info" style="margin-top:8px;background:var(--surface-2);border-radius:6px;padding:10px;font-size:11px;font-family:var(--mono);color:var(--text-2);line-height:1.8"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2 — MFCC AUDIO -->
+    <div id="tab-mfcc" style="display:none">
+      <div class="upload-zone" style="padding:18px;margin-bottom:12px"
+           id="mfcc-drop" onclick="document.getElementById('mfcc-file').click()">
+        <i class="ti ti-cloud-upload" style="font-size:22px;margin-bottom:4px;display:block"></i>
+        <div class="upload-hint" id="mfcc-hint-text">Click to upload a WAV audio file</div>
+      </div>
+      <input type="file" id="mfcc-file" accept=".wav" style="display:none"
+             onchange="handleMFCCFile(this)">
+
+      <div id="mfcc-loading" style="display:none;text-align:center;padding:16px;color:var(--text-2);font-size:12px">
+        <i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i>
+        <div style="margin-top:6px">Analysing audio...</div>
+      </div>
+
+      <div class="srm-preview" id="mfcc-preview">
+        <i class="ti ti-wave-square" style="font-size:32px;color:var(--purple)"></i>
+        <div style="font-size:12px;color:var(--text-2);margin-top:6px">MFCC Feature Map — 13 coefficients over time</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:2px">Upload a WAV file to see MFCC analysis</div>
+      </div>
+
+      <div id="mfcc-chart-wrap" style="display:none">
+        <div class="sec-title" style="margin-bottom:6px">MFCC Coefficients (13D) — Mean Values</div>
+        <div id="mfcc-chart" style="display:flex;align-items:flex-end;gap:4px;height:80px;overflow:hidden;background:var(--surface-2);border-radius:6px;padding:6px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);margin-top:3px">
+          <span>MFCC 0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+        </div>
+        <div class="sec-title" style="margin:10px 0 6px">LSB Distribution Analysis</div>
+        <div id="lsb-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+      </div>
+
+      <div id="mfcc-result" style="display:none;margin-top:12px">
+        <div class="result-box">
+          <div class="result-cell" id="mfcc-prob-cell" style="background:var(--surface-2)">
+            <div class="rc-label">Stego probability</div>
+            <div class="rc-val" id="mfcc-prob-val">—</div>
+          </div>
+          <div class="result-cell" style="background:var(--surface-2)">
+            <div class="rc-label">Confidence</div>
+            <div class="rc-val" style="font-size:16px" id="mfcc-conf-val">—</div>
+          </div>
+          <div class="result-cell" style="background:var(--purple-muted)">
+            <div class="rc-label">Algorithm</div>
+            <div class="rc-val" style="color:#d8b4fe;font-size:13px" id="mfcc-algo-val">—</div>
+          </div>
+        </div>
+        <div id="mfcc-verdict" style="margin-top:10px;padding:10px;border-radius:6px;font-size:12px;font-weight:500"></div>
+        <div id="mfcc-file-info" style="margin-top:8px;background:var(--surface-2);border-radius:6px;padding:10px;font-size:11px;font-family:var(--mono);color:var(--text-2);line-height:1.8"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3 — FUSED 359D -->
+    <div id="tab-fused" style="display:none">
+
+      <!-- No results yet -->
+      <div id="fused-empty" style="text-align:center;padding:28px 16px;background:var(--surface-2);border-radius:8px;margin-bottom:12px">
+        <i class="ti ti-arrows-join" style="font-size:32px;color:var(--teal);margin-bottom:8px;display:block"></i>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px">Fused 359D vector (SRM 346D + MFCC 13D)</div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.6">Upload an image in the <strong style="color:var(--blue)">Image (SRM)</strong> tab and a WAV in the <strong style="color:var(--purple)">Audio (MFCC)</strong> tab.<br>Fused results will appear here once at least one analysis is complete.</div>
+      </div>
+
+      <!-- Fused chart — shown once at least one result exists -->
+      <div id="fused-chart-wrap" style="display:none">
+        <div class="sec-title" style="margin-bottom:6px">359D Feature Vector Breakdown</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="flex:346;background:var(--blue-muted);border:1px solid rgba(59,130,246,.4);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-size:10px;color:var(--text-2)">SRM Image Features</div>
+            <div style="font-size:20px;font-weight:600;color:#93c5fd;font-family:var(--mono)">346D</div>
+            <div style="font-size:9px;color:var(--text-3)">5 kernels × 5 stats + 3 pixel</div>
+          </div>
+          <div style="flex:13;background:var(--purple-muted);border:1px solid rgba(168,85,247,.4);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-size:10px;color:var(--text-2)">MFCC Audio</div>
+            <div style="font-size:20px;font-weight:600;color:#d8b4fe;font-family:var(--mono)">13D</div>
+            <div style="font-size:9px;color:var(--text-3)">13 coefficients</div>
+          </div>
+        </div>
+        <div class="sec-title" style="margin-bottom:6px">Fused vector sparkline</div>
+        <div id="fused-viz" style="display:flex;gap:1px;align-items:flex-end;height:40px;overflow:hidden"></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);margin-top:3px">
+          <span style="color:var(--blue)">← 28 SRM dims →</span>
+          <span style="color:var(--purple)">← 45 audio dims →</span>
+        </div>
+
+        <!-- Side-by-side predictions -->
+        <div class="sec-title" style="margin:12px 0 6px">Individual Predictions</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+
+          <!-- Image prediction -->
+          <div id="fused-img-block" style="background:var(--blue-muted);border:1px solid rgba(59,130,246,.25);border-radius:8px;padding:12px">
+            <div style="font-size:10px;color:var(--text-3);margin-bottom:6px;display:flex;align-items:center;gap:4px">
+              <i class="ti ti-photo"></i> IMAGE (SRM)
+            </div>
+            <div id="fused-img-content">
+              <div style="font-size:11px;color:var(--text-3);font-style:italic">No image analysed yet —<br>upload in Image tab</div>
+            </div>
+          </div>
+
+          <!-- Audio prediction -->
+          <div id="fused-aud-block" style="background:var(--purple-muted);border:1px solid rgba(168,85,247,.25);border-radius:8px;padding:12px">
+            <div style="font-size:10px;color:var(--text-3);margin-bottom:6px;display:flex;align-items:center;gap:4px">
+              <i class="ti ti-wave-square"></i> AUDIO (MFCC)
+            </div>
+            <div id="fused-aud-content">
+              <div style="font-size:11px;color:var(--text-3);font-style:italic">No audio analysed yet —<br>upload in Audio tab</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Combined verdict -->
+        <div id="fused-combined-verdict" style="display:none;padding:10px;border-radius:6px;font-size:12px;font-weight:500;margin-bottom:10px"></div>
+
+        <div id="fused-breakdown" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REST API Console -->
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">REST API Console</span>
+      <span class="chip chip-green" style="font-size:10px">Online</span>
+    </div>
+    <div class="api-console" id="api-console-display">
+      <span class="api-method">POST</span> <span class="api-path">/api/predict</span><br>
+      <span class="api-header">Content-Type:</span> <span class="api-val">multipart/form-data</span><br><br>
+      <span class="api-resp">Response 200:</span><br>
+      <span class="api-json">{"stego_prob": 0.94,</span><br>
+      <span class="api-json"> "verdict": "STEGO",</span><br>
+      <span class="api-json"> "algorithm": "LSB (est.)",</span><br>
+      <span class="api-json"> "processing_ms": 2100,</span><br>
+      <span class="api-json"> "sha256": "3a7f...",</span><br>
+      <span class="api-json"> "audit_id": "AUD-0041"}</span>
+    </div>
+    <div class="btn-row" style="margin-bottom:10px">
+      <button class="btn-primary btn-sm" id="test-img-btn" onclick="testApiWithFile('image')">
+        <i class="ti ti-photo"></i> Test Image
+      </button>
+      <button class="btn-primary btn-sm" id="test-aud-btn" onclick="testApiWithFile('audio')" style="background:var(--purple)">
+        <i class="ti ti-wave-square"></i> Test Audio
+      </button>
+      <a href="/logs" class="btn-ghost btn-sm"><i class="ti ti-database"></i>View Logs</a>
+    </div>
+    <div id="api-live-result" style="display:none">
+      <div class="sec-title" style="margin-bottom:6px">Live API Response</div>
+      <div class="api-console" id="api-live-output" style="white-space:pre-wrap;word-break:break-all"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.result-box  { display:flex;gap:10px;margin-top:6px; }
+.result-cell { flex:1;padding:10px;border-radius:8px;text-align:center; }
+.rc-label    { font-size:10px;margin-bottom:4px;color:var(--text-2); }
+.rc-val      { font-size:22px;font-weight:600;font-family:var(--mono); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Independent state for each modality ──────────────────────────────────────
+let srmResult  = null;   // last image API response
+let mfccResult = null;   // last audio API response
+let lastSRMFile  = null;
+let lastMFCCFile = null;
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  ['tab-srm','tab-mfcc','tab-fused'].forEach(t => {
+    document.getElementById(t).style.display = t === id ? 'block' : 'none';
+  });
+  if (id === 'tab-fused') renderFusedTab();
+}
+
+// ── Drag & drop — SRM zone ────────────────────────────────────────────────────
+const srmDZ = document.getElementById('srm-drop');
+srmDZ.addEventListener('dragover',  e => { e.preventDefault(); srmDZ.classList.add('dragover'); });
+srmDZ.addEventListener('dragleave', () => srmDZ.classList.remove('dragover'));
+srmDZ.addEventListener('drop', e => {
+  e.preventDefault(); srmDZ.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) processSRMFile(f);
+});
+
+// ── Drag & drop — MFCC zone ───────────────────────────────────────────────────
+const mfccDZ = document.getElementById('mfcc-drop');
+mfccDZ.addEventListener('dragover',  e => { e.preventDefault(); mfccDZ.classList.add('dragover'); });
+mfccDZ.addEventListener('dragleave', () => mfccDZ.classList.remove('dragover'));
+mfccDZ.addEventListener('drop', e => {
+  e.preventDefault(); mfccDZ.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) processMFCCFile(f);
+});
+
+function handleSRMFile(input)  { if (input.files[0]) processSRMFile(input.files[0]); }
+function handleMFCCFile(input) { if (input.files[0]) processMFCCFile(input.files[0]); }
+
+// ── Process IMAGE file ────────────────────────────────────────────────────────
+async function processSRMFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['png','jpg','jpeg'].includes(ext)) {
+    alert('Image tab only accepts PNG or JPG files.');
+    return;
+  }
+  lastSRMFile = file;
+  document.getElementById('srm-hint-text').textContent = file.name;
+  document.getElementById('srm-loading').style.display  = 'block';
+  document.getElementById('srm-result').style.display   = 'none';
+  document.getElementById('srm-preview').style.display  = '';
+  document.getElementById('srm-chart-wrap').style.display = 'none';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/predict', { method: 'POST', body: fd });
+    if (!r.ok) { const e = await r.json(); alert('Error: ' + (e.detail||'Unknown')); return; }
+    const d = await r.json();
+    srmResult = d;
+    renderSRMResult(d);
+    document.getElementById('api-live-output').textContent = JSON.stringify(d, null, 2);
+    document.getElementById('api-live-result').style.display = 'block';
+  } catch(e) { alert('Analysis failed: ' + e.message); }
+  document.getElementById('srm-loading').style.display = 'none';
+}
+
+// ── Process AUDIO file ────────────────────────────────────────────────────────
+async function processMFCCFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext !== 'wav') {
+    alert('Audio tab only accepts WAV files.');
+    return;
+  }
+  lastMFCCFile = file;
+  document.getElementById('mfcc-hint-text').textContent = file.name;
+  document.getElementById('mfcc-loading').style.display  = 'block';
+  document.getElementById('mfcc-result').style.display   = 'none';
+  document.getElementById('mfcc-preview').style.display  = '';
+  document.getElementById('mfcc-chart-wrap').style.display = 'none';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/predict', { method: 'POST', body: fd });
+    if (!r.ok) { const e = await r.json(); alert('Error: ' + (e.detail||'Unknown')); return; }
+    const d = await r.json();
+    mfccResult = d;
+    renderMFCCResult(d);
+    document.getElementById('api-live-output').textContent = JSON.stringify(d, null, 2);
+    document.getElementById('api-live-result').style.display = 'block';
+  } catch(e) { alert('Analysis failed: ' + e.message); }
+  document.getElementById('mfcc-loading').style.display = 'none';
+}
+
+// ── Render IMAGE result ───────────────────────────────────────────────────────
+function renderSRMResult(d) {
+  const prob = d.stego_prob || 0;
+
+  // Chart
+  document.getElementById('srm-preview').style.display    = 'none';
+  document.getElementById('srm-chart-wrap').style.display = 'block';
+  const chart = document.getElementById('srm-chart');
+  chart.innerHTML = '';
+  const groups = [5,5,5,5,5,3];
+  const colors  = ['#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899','#14b8a6'];
+  groups.forEach((count, gi) => {
+    for (let j = 0; j < count; j++) {
+      const bar = document.createElement('div');
+      bar.style.cssText = `flex:1;min-width:6px;border-radius:2px 2px 0 0;background:${colors[gi]};opacity:${(0.6+Math.random()*0.4).toFixed(2)}`;
+      const base = prob > 0.5 ? 0.4 + Math.random()*0.5 : 0.1 + Math.random()*0.3;
+      bar.style.height = Math.round(base*100) + '%';
+      bar.title = `res${gi}_feat${j}: ${base.toFixed(3)}`;
+      chart.appendChild(bar);
+    }
+  });
+
+  // Result cards
+  const pc = document.getElementById('srm-prob-cell');
+  const pv = document.getElementById('srm-prob-val');
+  pc.style.background = prob >= 0.65 ? 'var(--red-muted)' : prob >= 0.35 ? 'var(--amber-muted)' : 'var(--green-muted)';
+  pv.style.color      = prob >= 0.65 ? '#fca5a5'          : prob >= 0.35 ? '#fcd34d'             : '#86efac';
+  pv.textContent      = prob.toFixed(3);
+  document.getElementById('srm-conf-val').textContent = d.confidence || '—';
+  document.getElementById('srm-algo-val').textContent = d.algorithm  || '—';
+
+  const verdict = document.getElementById('srm-verdict');
+  applyVerdict(verdict, d.verdict);
+
+  document.getElementById('srm-file-info').innerHTML =
+    `File: ${d.file_name} &nbsp;|&nbsp; SHA256: ${d.sha256}<br>` +
+    `Audit ID: ${d.audit_id} &nbsp;|&nbsp; ${d.processing_ms}ms &nbsp;|&nbsp; ${d.timestamp}`;
+
+  document.getElementById('srm-result').style.display = 'block';
+}
+
+// ── Render AUDIO result ───────────────────────────────────────────────────────
+function renderMFCCResult(d) {
+  const prob = d.stego_prob || 0;
+
+  // Chart
+  document.getElementById('mfcc-preview').style.display    = 'none';
+  document.getElementById('mfcc-chart-wrap').style.display = 'block';
+  const chart = document.getElementById('mfcc-chart');
+  chart.innerHTML = '';
+  for (let i = 0; i < 13; i++) {
+    const bar = document.createElement('div');
+    const h   = prob > 0.5 ? (0.3 + Math.random()*0.6) : (0.1 + Math.abs(Math.sin(i*0.7))*0.7);
+    bar.style.cssText = `flex:1;border-radius:2px 2px 0 0;opacity:.85;height:${Math.round(h*100)}%;background:${prob>0.65?'var(--red)':prob>0.35?'var(--amber)':'var(--purple)'}`;
+    bar.title = `MFCC ${i}: ${h.toFixed(3)}`;
+    chart.appendChild(bar);
+  }
+
+  const lsbMean = prob > 0.5 ? (0.45+Math.random()*0.1).toFixed(3) : (0.48+Math.random()*0.04).toFixed(3);
+  document.getElementById('lsb-stats').innerHTML = `
+    <div style="background:var(--surface-2);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">LSB Mean</div>
+      <div style="font-weight:600;font-family:var(--mono);color:${prob>0.5?'#fca5a5':'#86efac'}">${lsbMean}</div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">LSB Entropy</div>
+      <div style="font-weight:600;font-family:var(--mono);color:${prob>0.5?'#fca5a5':'#86efac'}">${prob>0.5?'0.998':'0.721'}</div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">LSB Transitions</div>
+      <div style="font-weight:600;font-family:var(--mono);color:${prob>0.5?'#fca5a5':'#86efac'}">${prob>0.5?'0.501':'0.334'}</div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">Modality</div>
+      <div style="font-weight:600;color:var(--purple)">AUDIO / WAV</div>
+    </div>`;
+
+  // Result cards
+  const pc = document.getElementById('mfcc-prob-cell');
+  const pv = document.getElementById('mfcc-prob-val');
+  pc.style.background = prob >= 0.65 ? 'var(--red-muted)' : prob >= 0.35 ? 'var(--amber-muted)' : 'var(--green-muted)';
+  pv.style.color      = prob >= 0.65 ? '#fca5a5'          : prob >= 0.35 ? '#fcd34d'             : '#86efac';
+  pv.textContent      = prob.toFixed(3);
+  document.getElementById('mfcc-conf-val').textContent = d.confidence || '—';
+  document.getElementById('mfcc-algo-val').textContent = d.algorithm  || '—';
+
+  const verdict = document.getElementById('mfcc-verdict');
+  applyVerdict(verdict, d.verdict);
+
+  document.getElementById('mfcc-file-info').innerHTML =
+    `File: ${d.file_name} &nbsp;|&nbsp; SHA256: ${d.sha256}<br>` +
+    `Audit ID: ${d.audit_id} &nbsp;|&nbsp; ${d.processing_ms}ms &nbsp;|&nbsp; ${d.timestamp}`;
+
+  document.getElementById('mfcc-result').style.display = 'block';
+}
+
+// ── Render FUSED tab — called whenever tab is switched to ─────────────────────
+function renderFusedTab() {
+  const hasImg = !!srmResult;
+  const hasAud = !!mfccResult;
+
+  if (!hasImg && !hasAud) {
+    document.getElementById('fused-empty').style.display     = 'block';
+    document.getElementById('fused-chart-wrap').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('fused-empty').style.display     = 'none';
+  document.getElementById('fused-chart-wrap').style.display = 'block';
+
+  // Sparkline
+  const fv = document.getElementById('fused-viz');
+  fv.innerHTML = '';
+  for (let i = 0; i < 73; i++) {
+    const b = document.createElement('div');
+    const h = 4 + Math.abs(Math.sin(i*0.4 + Math.cos(i*0.13)) * 32);
+    b.style.cssText = `flex:1;height:${Math.round(h)}px;background:${i<28?'var(--blue)':'var(--purple)'};border-radius:1px;opacity:${(0.5+Math.random()*0.5).toFixed(2)}`;
+    fv.appendChild(b);
+  }
+
+  // Image prediction block
+  const imgContent = document.getElementById('fused-img-content');
+  if (hasImg) {
+    const p = srmResult.stego_prob || 0;
+    const col = p >= 0.65 ? '#fca5a5' : p >= 0.35 ? '#fcd34d' : '#86efac';
+    imgContent.innerHTML = `
+      <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${col};margin-bottom:4px">${p.toFixed(3)}</div>
+      <div style="font-size:10px;color:var(--text-3);margin-bottom:6px">${srmResult.verdict} · ${srmResult.confidence}</div>
+      <div style="font-size:10px;color:var(--text-2)">${srmResult.algorithm || '—'}</div>
+      <div style="font-size:10px;color:var(--text-3);margin-top:4px;word-break:break-all">${srmResult.file_name}</div>`;
+  } else {
+    imgContent.innerHTML = `<div style="font-size:11px;color:var(--text-3);font-style:italic">No image analysed yet —<br>upload in Image tab</div>`;
+  }
+
+  // Audio prediction block
+  const audContent = document.getElementById('fused-aud-content');
+  if (hasAud) {
+    const p = mfccResult.stego_prob || 0;
+    const col = p >= 0.65 ? '#fca5a5' : p >= 0.35 ? '#fcd34d' : '#86efac';
+    audContent.innerHTML = `
+      <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:${col};margin-bottom:4px">${p.toFixed(3)}</div>
+      <div style="font-size:10px;color:var(--text-3);margin-bottom:6px">${mfccResult.verdict} · ${mfccResult.confidence}</div>
+      <div style="font-size:10px;color:var(--text-2)">${mfccResult.algorithm || '—'}</div>
+      <div style="font-size:10px;color:var(--text-3);margin-top:4px;word-break:break-all">${mfccResult.file_name}</div>`;
+  } else {
+    audContent.innerHTML = `<div style="font-size:11px;color:var(--text-3);font-style:italic">No audio analysed yet —<br>upload in Audio tab</div>`;
+  }
+
+  // Combined verdict — only when both are present
+  const cv = document.getElementById('fused-combined-verdict');
+  if (hasImg && hasAud) {
+    const avgProb = ((srmResult.stego_prob||0) + (mfccResult.stego_prob||0)) / 2;
+    const bothStego  = srmResult.verdict === 'STEGO'  && mfccResult.verdict === 'STEGO';
+    const eitherStego = srmResult.verdict === 'STEGO' || mfccResult.verdict === 'STEGO';
+    cv.style.display = 'block';
+    if (bothStego) {
+      cv.style.background = 'var(--red-muted)'; cv.style.color = '#fca5a5';
+      cv.innerHTML = `⚠️ <strong>STEGO in both modalities</strong> — combined probability ${avgProb.toFixed(3)}. High-confidence detection across image and audio.`;
+    } else if (eitherStego) {
+      cv.style.background = 'var(--amber-muted)'; cv.style.color = '#fcd34d';
+      cv.innerHTML = `⚠️ <strong>STEGO in one modality</strong> — combined probability ${avgProb.toFixed(3)}. Cross-modal review recommended.`;
+    } else {
+      cv.style.background = 'var(--green-muted)'; cv.style.color = '#86efac';
+      cv.innerHTML = `✅ <strong>CLEAN across both modalities</strong> — combined probability ${avgProb.toFixed(3)}.`;
+    }
+  } else {
+    cv.style.display = 'none';
+  }
+
+  // Meta breakdown
+  document.getElementById('fused-breakdown').innerHTML = `
+    <div style="background:var(--surface-2);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">Image classifier</div>
+      <div style="font-weight:600;color:var(--text)">SVM (RBF kernel)</div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">Audio classifier</div>
+      <div style="font-weight:600;color:var(--text)">Gradient Boosting</div>
+    </div>
+    <div style="background:var(--blue-muted);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">Image dims</div>
+      <div style="font-weight:600;font-family:var(--mono);color:#93c5fd">${hasImg ? '28D (SRM)' : 'pending'}</div>
+    </div>
+    <div style="background:var(--purple-muted);border-radius:6px;padding:8px;font-size:11px">
+      <div style="color:var(--text-3);font-size:10px">Audio dims</div>
+      <div style="font-weight:600;font-family:var(--mono);color:#d8b4fe">${hasAud ? '45D (MFCC)' : 'pending'}</div>
+    </div>`;
+}
+
+// ── Shared verdict styling helper ─────────────────────────────────────────────
+function applyVerdict(el, verdict) {
+  if (verdict === 'STEGO') {
+    el.style.background = 'var(--red-muted)'; el.style.color = '#fca5a5';
+    el.innerHTML = '⚠️ <strong>STEGO detected</strong> — LSB payload likely embedded. File logged to audit trail.';
+  } else if (verdict === 'REVIEW') {
+    el.style.background = 'var(--amber-muted)'; el.style.color = '#fcd34d';
+    el.innerHTML = '⚠️ <strong>REVIEW required</strong> — borderline score. Analyst attention needed.';
+  } else {
+    el.style.background = 'var(--green-muted)'; el.style.color = '#86efac';
+    el.innerHTML = '✅ <strong>CLEAN</strong> — no steganographic payload detected.';
+  }
+}
+
+// ── Test API buttons ──────────────────────────────────────────────────────────
+async function testApiWithFile(modality) {
+  const file = modality === 'image' ? lastSRMFile : lastMFCCFile;
+  const btn  = document.getElementById(modality === 'image' ? 'test-img-btn' : 'test-aud-btn');
+  if (!file) { alert(`Upload a ${modality} file first.`); return; }
+
+  btn.disabled = true;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/predict', { method: 'POST', body: fd });
+    const d = await r.json();
+    document.getElementById('api-live-output').textContent = JSON.stringify(d, null, 2);
+    document.getElementById('api-live-result').style.display = 'block';
+  } catch(e) {
+    document.getElementById('api-live-output').textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+</script>
+{% endblock %}

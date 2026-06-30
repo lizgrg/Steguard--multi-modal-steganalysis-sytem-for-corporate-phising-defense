@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="two-col">
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Detection Thresholds</span></div>
+
+    <div class="settings-row">
+      <label><span>Stego threshold — if probability above this → STEGO</span><span id="stego-val" style="color:var(--blue)">0.65</span></label>
+      <input type="range" min="50" max="95" value="65" id="stego-slider"
+        oninput="updateSlider('stego', this.value)">
+    </div>
+
+    <div class="settings-row">
+      <label><span>Review zone lower — if probability above this → REVIEW</span><span id="review-val" style="color:var(--amber)">0.35</span></label>
+      <input type="range" min="10" max="60" value="35" id="review-slider"
+        oninput="updateSlider('review', this.value)">
+    </div>
+
+    <div class="settings-row">
+      <label><span>FPR target</span><span id="fpr-val" style="color:var(--green)">&lt;1.0%</span></label>
+      <input type="range" min="1" max="10" value="1"
+        oninput="document.getElementById('fpr-val').textContent='<'+this.value+'%'">
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn-primary" onclick="saveThresholds()"><i class="ti ti-device-floppy"></i>Save Thresholds</button>
+      <button class="btn-ghost"   onclick="resetThresholds()"><i class="ti ti-refresh"></i>Reset to Default</button>
+    </div>
+
+    <div id="save-banner" style="display:none;margin-top:10px;padding:8px 12px;background:var(--green-muted);border:1px solid rgba(34,197,94,.3);border-radius:6px;font-size:12px;color:#86efac">
+      <i class="ti ti-check"></i> Thresholds saved and applied to all future predictions.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Integrations</span></div>
+    <div class="integration-row"><span><i class="ti ti-plug"></i> Splunk webhook</span><span class="chip chip-amber">Future Work</span></div>
+    <div class="integration-row"><span><i class="ti ti-plug"></i> ElasticSearch</span><span class="chip chip-amber">Future Work</span></div>
+    <div class="integration-row"><span><i class="ti ti-brand-docker"></i> Docker health</span><span class="chip chip-amber">Future Work</span></div>
+    <div class="integration-row"><span><i class="ti ti-database"></i> MySQL (stegshield)</span><span class="chip chip-green">Online</span></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load saved thresholds on page load
+window.addEventListener('DOMContentLoaded', () => {
+  const stego  = parseFloat(localStorage.getItem('thresh_stego')  || '0.65');
+  const review = parseFloat(localStorage.getItem('thresh_review') || '0.35');
+
+  const stegoSlider  = document.getElementById('stego-slider');
+  const reviewSlider = document.getElementById('review-slider');
+
+  stegoSlider.value  = Math.round(stego  * 100);
+  reviewSlider.value = Math.round(review * 100);
+
+  document.getElementById('stego-val').textContent  = stego.toFixed(2);
+  document.getElementById('review-val').textContent = review.toFixed(2);
+});
+
+function updateSlider(type, val) {
+  const display = (val / 100).toFixed(2);
+  if (type === 'stego')  document.getElementById('stego-val').textContent  = display;
+  if (type === 'review') document.getElementById('review-val').textContent = display;
+}
+
+// Fix 4 — Save thresholds to localStorage and apply globally
+function saveThresholds() {
+  const stego  = document.getElementById('stego-slider').value  / 100;
+  const review = document.getElementById('review-slider').value / 100;
+
+  localStorage.setItem('thresh_stego',  stego);
+  localStorage.setItem('thresh_review', review);
+
+  // Apply to global threshold used by main.js
+  window.THRESHOLDS.stego  = stego;
+  window.THRESHOLDS.review = review;
+
+  const banner = document.getElementById('save-banner');
+  banner.style.display = 'block';
+  setTimeout(() => banner.style.display = 'none', 3000);
+}
+
+function resetThresholds() {
+  localStorage.setItem('thresh_stego',  '0.65');
+  localStorage.setItem('thresh_review', '0.35');
+  window.THRESHOLDS.stego  = 0.65;
+  window.THRESHOLDS.review = 0.35;
+
+  document.getElementById('stego-slider').value  = 65;
+  document.getElementById('review-slider').value = 35;
+  document.getElementById('stego-val').textContent  = '0.65';
+  document.getElementById('review-val').textContent = '0.35';
+
+  const banner = document.getElementById('save-banner');
+  banner.textContent = '✓ Reset to default thresholds.';
+  banner.style.display = 'block';
+  setTimeout(() => { banner.style.display = 'none'; banner.textContent = '✓ Thresholds saved and applied.'; }, 2000);
+}
+</script>
+{% endblock %}
